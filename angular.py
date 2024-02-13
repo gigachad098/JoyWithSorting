@@ -18,22 +18,38 @@ class Point:
         self.x = x
         self.y = y
 
-    def __cmp__(self, other):
-        """
+    # def __cmp__(self, other):
+    #     """
+    #
+    #     :param other: The other point object
+    #     :return: 1 if the angle is greater than the other, 0 if equal,
+    #     -1 if less.
+    #     """
+    #     if self.angle < other.angle:
+    #         return -1
+    #     elif self.angle == other.angle:
+    #         return 0
+    #     else:
+    #         return 1
 
-        :param other: The other point object
-        :return: 1 if the angle is greater than the other, 0 if equal,
-        -1 if less.
-        """
-        if self.angle < other.angle:
-            return -1
-        elif self.angle == other.angle:
-            return 0
-        else:
-            return 1
+    def __lt__(self, other):
+        return self.angle < other.angle
+
+    def __gt__(self, other):
+        return self.angle > other.angle
+
+    def __ge__(self, other):
+        return self.angle >= other.angle
+
+    def __eq__(self, other):
+        return self.angle == other.angle
+
+    def __ne__(self, other):
+        return self.angle != other.angle
 
     def __str__(self):
         return f"{self.x}, {self.y}"
+
 
 
 def timsort(unsortedlist, minrun=32):
@@ -46,15 +62,56 @@ def timsort(unsortedlist, minrun=32):
     """
     runstack = deque()
     currrun = []
-    for i in range(unsortedlist):
+    for i in range(len(unsortedlist)):
         if len(currrun) > 0 and unsortedlist[i] < currrun[-1]:
             currrun = insertionsort(currrun, unsortedlist[i])
-            if len(currrun) >= minrun:
+            if len(currrun) > minrun or i == len(unsortedlist) - 1:
                 runstack.appendleft(currrun)
+                result = runstackvariancecheck(runstack)
+                while (not result[0]):
+                    result = runstackvariancecheck(runstack)
+                    runstack = result[1]
                 currrun = []
         else:
             currrun.append(unsortedlist[i])
-        # I still don't know how to do the invariance but it would go here lol
+    printrunstack(runstack)
+    return timsortmerge(runstack)
+
+def printrunstack(runstack: deque):
+    stack = runstack.copy()
+    startindex = 0
+    while (len(stack) > 0):
+        temp = stack.pop()
+        print(f"[{startindex}, {len(temp)}]")
+        startindex += len(temp)
+
+def runstackvariancecheck(runstack: deque):
+    """
+
+    :param runstack:
+    :return:
+    """
+    if len(runstack) < 3:
+        return True, runstack
+    else:
+        x = runstack.popleft()
+        y = runstack.popleft()
+        z = runstack.popleft()
+        if len(z) <= len(x) + len(y):
+            newy = bottomupmerg(z, y)
+            runstack.appendleft(newy)
+            runstack.appendleft(x)
+            return False, runstack
+        elif len(y) <= len(x):
+            newx = bottomupmerg(y, x)
+            runstack.appendleft(z)
+            runstack.appendleft(newx)
+            return False, runstack
+        else:
+            runstack.appendleft(z)
+            runstack.appendleft(y)
+            runstack.appendleft(x)
+            return True, runstack
 
 
 def timsortmerge(runstack):
@@ -163,7 +220,7 @@ def getinput(inputfilepath):
             points = []
             for i in range(int(f.readline())):
                 xy = f.readline().split()
-                points.append(Point(int(xy[0]), int(xy[1])))
+                points.append(Point(float(xy[0]), float(xy[1])))
         f.close()
         return points
     except FileNotFoundError:
@@ -176,8 +233,11 @@ def main(inputfile):
 
     :param inputfile: the file of points for the input
     """
-    getinput(inputfile)
+    points = getinput(inputfile)
+    sortedpoints = timsort(points)
+    # for point in sortedpoints:
+    #     print(str(point))
 
 
-if __name__ == "__Main__":
+if __name__ == "__main__":
     main(sys.argv[1])
