@@ -1,5 +1,6 @@
 import unittest
 import angular
+from angular import Point
 from collections import deque
 
 class TestSortingMethods(unittest.TestCase):
@@ -10,6 +11,14 @@ class TestSortingMethods(unittest.TestCase):
         actual = angular.bottomupmerg(lista,listb)
         expected = [1,2,3,3,4,4,5,5,6,6]
         self.assertEqual(actual, expected)
+
+    def testpointComp(self):
+        a = Point(5, 6)
+        b = Point(5, 6)
+        self.assertEqual(a,b)
+        c = Point(2, 3)
+        d = Point(4, 5)
+        self.assertGreater(c,d)
 
     def testInsertionAtIndex(self):
         templist = [1,2,3,4,5,6]

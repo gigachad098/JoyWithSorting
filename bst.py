@@ -12,4 +12,5 @@ class BST:
             self.root = newNode
             return
         else:
+            return
 

@@ -8,7 +8,7 @@ class Point:
         Point class is used to represent points on the plane
     """
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, index):
         """
 
         :param x: The x value on the plane
@@ -17,20 +17,7 @@ class Point:
         self.angle = xytoangle(x, y)
         self.x = x
         self.y = y
-
-    # def __cmp__(self, other):
-    #     """
-    #
-    #     :param other: The other point object
-    #     :return: 1 if the angle is greater than the other, 0 if equal,
-    #     -1 if less.
-    #     """
-    #     if self.angle < other.angle:
-    #         return -1
-    #     elif self.angle == other.angle:
-    #         return 0
-    #     else:
-    #         return 1
+        self.index = index
 
     def __lt__(self, other):
         return self.angle < other.angle
@@ -48,7 +35,7 @@ class Point:
         return self.angle != other.angle
 
     def __str__(self):
-        return f"{self.x}, {self.y}"
+        return f"{self.angle}"
 
 
 
@@ -62,28 +49,31 @@ def timsort(unsortedlist, minrun=32):
     """
     runstack = deque()
     currrun = []
+    numberofrunsfound = 0
+    numberofmergs = 0
     for i in range(len(unsortedlist)):
-        if len(currrun) > 0 and unsortedlist[i] < currrun[-1]:
-            currrun = insertionsort(currrun, unsortedlist[i])
-            if len(currrun) > minrun or i == len(unsortedlist) - 1:
+        if len(currrun) > 0 and unsortedlist[i] < unsortedlist[currrun[-1]]:
+            currrun = insertionsort(currrun, unsortedlist[i], unsortedlist)
+            if len(currrun) >= minrun or i == len(unsortedlist) - 1:
                 runstack.appendleft(currrun)
+                numberofrunsfound += 1
                 result = runstackvariancecheck(runstack)
                 while (not result[0]):
                     result = runstackvariancecheck(runstack)
                     runstack = result[1]
+                    numberofmergs += result[2]
                 currrun = []
         else:
-            currrun.append(unsortedlist[i])
-    printrunstack(runstack)
-    return timsortmerge(runstack)
+            currrun.append(i)
+    printrunstack(runstack, unsortedlist)
+    return timsortmerge(runstack, numberofmergs, numberofrunsfound)
 
-def printrunstack(runstack: deque):
+def printrunstack(runstack: deque, unsortedlist):
+    print("run stack after scanning")
     stack = runstack.copy()
-    startindex = 0
     while (len(stack) > 0):
-        temp = stack.pop()
-        print(f"[{startindex}, {len(temp)}]")
-        startindex += len(temp)
+        temp = stack.popleft()
+        print(f"[{temp[0]}, {len(temp)}]")
 
 def runstackvariancecheck(runstack: deque):
     """
@@ -91,45 +81,49 @@ def runstackvariancecheck(runstack: deque):
     :param runstack:
     :return:
     """
-    if len(runstack) < 3:
-        return True, runstack
+    if len(runstack) <= 2:
+        return True, runstack, 0
     else:
         x = runstack.popleft()
         y = runstack.popleft()
         z = runstack.popleft()
-        if len(z) <= len(x) + len(y):
+        if not len(z) > len(x) + len(y):
             newy = bottomupmerg(z, y)
             runstack.appendleft(newy)
             runstack.appendleft(x)
-            return False, runstack
-        elif len(y) <= len(x):
+            return False, runstack, 1
+        if len(runstack) >= 3 and not len(y) > len(x):
             newx = bottomupmerg(y, x)
             runstack.appendleft(z)
             runstack.appendleft(newx)
-            return False, runstack
-        else:
-            runstack.appendleft(z)
-            runstack.appendleft(y)
-            runstack.appendleft(x)
-            return True, runstack
+            return False, runstack, 1
+        runstack.appendleft(z)
+        runstack.appendleft(y)
+        runstack.appendleft(x)
+        return True, runstack, 0
 
 
-def timsortmerge(runstack):
+def timsortmerge(runstack, numberofmerges, numberofrunsfound):
     """
     This function is used to merge the runstack produced by timsort
 
     :param runstack: the stack of runs
     :return: merged list
     """
+    print("bottom up merging")
     while True:
         tempstack = deque()
         while len(runstack) >= 2:
             a = runstack.popleft()
             b = runstack.popleft()
+            print(f"merging [{a[0]}, {len(a)}], [{b[0]}, {len(b)}]")
+            numberofmerges += 1
             tempstack.appendleft(bottomupmerg(a, b))
         while len(tempstack) > 0:
             runstack.appendleft(tempstack.popleft())
         if len(runstack) == 1:
+            print(f"total number of runs found = {numberofrunsfound}")
+            print(f"total number of merges performed = {numberofmerges}")
             return runstack.popleft()
 
 
@@ -166,7 +160,7 @@ def bottomupmerg(lista, listb):
     return newlist
 
 
-def insertionsort(list, insertion):
+def insertionsort(list, insertion, unsortedlist):
     """
     Standard insertion sort helper for timsort
 
@@ -175,9 +169,9 @@ def insertionsort(list, insertion):
     :return: modified list
     """
     for i in range(len(list)):
-        if insertion < list[i]:
+        if unsortedlist[insertion.index] < unsortedlist[list[i]]:
             return insertatlistindex(list, insertion, i)
-    return list.extend([insertion])
+    return list.extend([insertion.index])
 
 
 def insertatlistindex(list: [], insertion, index):
@@ -190,7 +184,7 @@ def insertatlistindex(list: [], insertion, index):
     :return: the modified list
     """
     templist = list[:index]
-    templist.append(insertion)
+    templist.append(insertion.index)
     templist.extend(list[index:])
     return templist
 
@@ -218,9 +212,11 @@ def getinput(inputfilepath):
     try:
         with open(inputfilepath, 'r') as f:
             points = []
+            index = 0
             for i in range(int(f.readline())):
                 xy = f.readline().split()
-                points.append(Point(float(xy[0]), float(xy[1])))
+                points.append(Point(float(xy[0]), float(xy[1]), index))
+                index += 1
         f.close()
         return points
     except FileNotFoundError:
@@ -239,5 +235,6 @@ def main(inputfile):
     #     print(str(point))
 
 
-if __name__ == "__main__":
-    main(sys.argv[1])
+# if __name__ == "__main__":
+#     main(sys.argv[1])
+main("input-points.txt")
