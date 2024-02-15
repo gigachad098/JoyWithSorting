@@ -22,6 +22,9 @@ public class ClosestPoint {
             int pointiindex = 0;
             int pointjindex = jcount++;
             d = computeDist(pointList.get(pointiindex), pointList.get(pointjindex));
+            System.out.println(pointList.get(pointiindex).y);
+            // d is 0 for some reason.
+            System.out.println(d);
             TreeMap<Point, Integer> map = new TreeMap<>(new PointYComparator());
             map.put(pointList.get(pointiindex), pointiindex);
             map.put(pointList.get(pointjindex), pointjindex);
@@ -39,21 +42,20 @@ public class ClosestPoint {
                     }
                     mapfirstentry = map.higherEntry(mapfirstentry).getKey();
                 }
-                while (pointList.get(pointjindex).x - pointList.get(pointiindex).x <= d) {
-                    int newjindex = pointjindex++;
-                    int newiindex = pointiindex++;
-                    if (pointList.get(newjindex).x - pointList.get(newiindex).x <= d) {
-                        map.remove(pointList.get(pointjindex));
-                        map.remove(pointList.get(pointiindex));
-                        pointjindex = newjindex;
-                        pointiindex = newiindex;
-                    }
+                int newpointi = pointiindex++;
+                int newpointj = pointjindex++;
+                while ((newpointj < pointList.size() - 1) && (pointList.get(newpointj).x - pointList.get(newpointi).x <= d)) {
+                    map.remove(pointList.get(pointiindex));
+                    pointiindex++;
+                    pointjindex++;
+                    newpointi = pointiindex++;
+                    newpointj = pointjindex++;
                 }
             }
         }
         System.out.println("The closest pair of points is " + d);
     }
     public static double computeDist(Point a, Point b) {
-        return Math.sqrt(Math.pow((b.x - a.x), 2) + Math.pow((b.y - a.y), 2));
+        return Math.sqrt(((b.x - a.x) * (b.x - a.x)) +((b.y - a.y) * (b.y - a.y)));
     }
 }
